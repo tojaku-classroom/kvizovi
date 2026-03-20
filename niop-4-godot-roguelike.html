@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Godot Roguelike – Kviz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    body { background: #0f172a; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+<div id="app" class="w-full max-w-2xl"></div>
+
+<script>
+// ─── BANKA PITANJA (40 pitanja, 30 se testira) ─────────────────────────────
+const allQuestions = [
+
+  // ══════════════════════════════════════════════════════
+  //  PITANJA IZ REPOZITORIJA  (27 pitanja)
+  // ══════════════════════════════════════════════════════
+
+  {
+    topic: "enemy.gd",
+    question: "Koliki je zadani maksimalni broj životnih bodova (max_hp) neprijatelja definiran u enemy.gd?",
+    options: ["4", "8", "10", "20"],
+    correctIndex: 0
+  },
+  {
+    topic: "enemy.gd",
+    question: "Koja metoda u enemy.gd aktivira ili deaktivira neprijatelja ovisno o tome je li igrač ušao u njegovu sobu?",
+    options: ["_on_player_enter_room", "_ready", "initialize", "_physics_process"],
+    correctIndex: 0
+  },
+  {
+    topic: "enemy.gd",
+    question: "Koji uvjet neprijatelj provjerava da bi odlučio hoće li napasti umjesto kretati se prema igraču?",
+    options: [
+      "player_distance < attack_range",
+      "player_distance > attack_range",
+      "player_distance == 0",
+      "player_distance < move_speed"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "enemy.gd",
+    question: "Što radi metoda die() u enemy.gd?",
+    options: [
+      "Emitira signal OnDefeatEnemy i poziva queue_free()",
+      "Samo poziva queue_free() bez emitiranja signala",
+      "Emitira signal OnPlayerUpdateHealth i briše se",
+      "Deaktivira neprijatelja i čeka reset sobe"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "enemy.gd",
+    question: "Što radi metoda _damage_flash() u enemy.gd?",
+    options: [
+      "Privremeno sakriva sprite (visible = false) i ponovo ga prikazuje nakon 0.07 sekundi",
+      "Mijenja boju spritea u crvenu na 0.5 sekundi",
+      "Reproducira zvuk i treperi sprite 3 puta",
+      "Smanjuje neprijateljevu brzinu kretanja za kratko vrijeme"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "enemy.gd",
+    question: "Na koji način enemy.gd dohvaća referencu na igrača?",
+    options: [
+      "get_tree().get_first_node_in_group(\"Player\")",
+      "get_node(\"/root/Main/Player\")",
+      "get_parent().get_node(\"Player\")",
+      "GlobalSignals.player"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "player.gd",
+    question: "Koliki je zadani maksimalni broj životnih bodova (max_hp) igrača u player.gd?",
+    options: ["8", "4", "10", "12"],
+    correctIndex: 0
+  },
+  {
+    topic: "player.gd",
+    question: "Koja je zadana brzina kretanja igrača (move_speed) u player.gd?",
+    options: ["50", "20", "100", "30"],
+    correctIndex: 0
+  },
+  {
+    topic: "player.gd",
+    question: "Koji je zadani razmak između pucanja igrača (shoot_rate) u player.gd?",
+    options: ["0.4 sekunde", "0.3 sekunde", "0.5 sekunde", "1.0 sekunda"],
+    correctIndex: 0
+  },
+  {
+    topic: "player.gd",
+    question: "Što se dogodi s rotacijom oružja igrača u svakom kadru (_process)?",
+    options: [
+      "weapon_origin.rotation_degrees se ažurira prema smjeru od igrača do miša",
+      "Oružje se polako rotira u smjeru kretanja",
+      "Projectile se automatski ispaljuje prema mišu",
+      "sprite.flip_h se mijenja ovisno o smjeru oružja"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "player.gd",
+    question: "Koji signal player.gd emitira svaki put kad se promijeni zdravlje igrača?",
+    options: ["OnPlayerUpdateHealth", "OnPlayerEnterRoom", "OnDefeatEnemy", "OnPlayerHeal"],
+    correctIndex: 0
+  },
+  {
+    topic: "player.gd",
+    question: "Gdje se instancira projektil nakon što igrač puca?",
+    options: [
+      "Dodaje se u get_tree().root kao dijete",
+      "Dodaje se kao dijete igraču",
+      "Dodaje se u trenutnu sobu",
+      "Dodaje se u CanvasLayer"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "projectile.gd",
+    question: "Koja je zadana osnovna brzina (base_speed) projektila u projectile.gd?",
+    options: ["100", "50", "200", "20"],
+    correctIndex: 0
+  },
+  {
+    topic: "projectile.gd",
+    question: "Nakon koliko sekundi projektil automatski nestane ako ne pogodi ništa?",
+    options: ["3.0", "1.0", "5.0", "2.0"],
+    correctIndex: 0
+  },
+  {
+    topic: "projectile.gd",
+    question: "Što projektil provjeri kao prvo u _on_body_entered()?",
+    options: [
+      "Je li tijelo s kojim je kolizija isti objekt koji je ispalio projektil (owner_character)",
+      "Je li tijelo neprijatelj",
+      "Je li tijelo StaticBody2D",
+      "Je li tijelo u grupi \"Player\""
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "room.gd",
+    question: "Koji enum definira smjerove ulaza u sobu unutar room.gd?",
+    options: ["Direction", "Side", "Entrance", "Path"],
+    correctIndex: 0
+  },
+  {
+    topic: "room.gd",
+    question: "Što znači kada soba ima postavljeno doors_always_open = true?",
+    options: [
+      "Vrata se nikada ne zatvaraju, neovisno o broju neprijatelja u sobi",
+      "Vrata se otvaraju samo kada igrač uđe unutar vidnog polja",
+      "Soba nema ni jednog neprijatelja",
+      "Soba je automatski boss soba"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "room.gd",
+    question: "Što room.gd radi s vratima kada igrač uđe u sobu s neprijateljima?",
+    options: [
+      "Zatvara sva četiri ulaza pozivanjem close_doors()",
+      "Otvara sva četiri ulaza pozivanjem open_doors()",
+      "Zatvara samo ulaz kroz koji je igrač ušao",
+      "Ne mijenja stanje vrata"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "room_generation.gd",
+    question: "Kolika je zadana veličina mape (map_size) u room_generation.gd?",
+    options: ["7", "5", "10", "12"],
+    correctIndex: 0
+  },
+  {
+    topic: "room_generation.gd",
+    question: "Koliko soba se generira po sesiji (rooms_to_generate)?",
+    options: ["12", "7", "10", "15"],
+    correctIndex: 0
+  },
+  {
+    topic: "room_generation.gd",
+    question: "Koliki je razmak između soba u world-space koordinatama (room_pos_offset)?",
+    options: ["160", "100", "200", "80"],
+    correctIndex: 0
+  },
+  {
+    topic: "room_generation.gd",
+    question: "Na kojoj poziciji u mapi se generira prva soba?",
+    options: ["(3, 3)", "(0, 0)", "(5, 5)", "(1, 1)"],
+    correctIndex: 0
+  },
+  {
+    topic: "item.gd",
+    question: "Koji ItemType povećava igraČevu brzinu kretanja (move_speed)?",
+    options: ["MOVE_SPEED", "SHOOT_RATE", "HEALTH", "SPEED_BOOST"],
+    correctIndex: 0
+  },
+  {
+    topic: "item.gd",
+    question: "Za koliko jedinica item_move_speed povećava igraCevu brzinu kretanja?",
+    options: ["10.0", "5.0", "20.0", "2.0"],
+    correctIndex: 0
+  },
+  {
+    topic: "item.gd",
+    question: "Što item tipa SHOOT_RATE zapravo radi s igraCevim parametrom shoot_rate?",
+    options: [
+      "Smanjuje vrijednost shoot_rate (kraći razmak između hitaca)",
+      "Povećava vrijednost shoot_rate (duži razmak između hitaca)",
+      "Resetira shoot_rate na zadanu vrijednost",
+      "Duplicira broj projektila po hicu"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "enemy_boss.tscn",
+    question: "Koliko životnih bodova ima boss neprijatelj (cur_hp / max_hp) prema enemy_boss.tscn?",
+    options: ["20", "4", "10", "15"],
+    correctIndex: 0
+  },
+  {
+    topic: "room_entrance.gd",
+    question: "Što se dogodi s barijerom ulaza kada soba dobije susjeda putem set_neighbor()?",
+    options: [
+      "Barijera se sakriva i aktiviraju se vrata (toggle_barrier(false))",
+      "Barijera ostaje vidljiva ali se dodaju vrata iznad nje",
+      "Vrata se odmah otvaraju bez barijere",
+      "Soba dobiva novi ulaz u suprotnom smjeru"
+    ],
+    correctIndex: 0
+  },
+
+  // ══════════════════════════════════════════════════════
+  //  OPĆA GODOT PITANJA  (13 pitanja)
+  // ══════════════════════════════════════════════════════
+
+  {
+    topic: "Godot osnove",
+    question: "Što je CharacterBody2D u Godot 4 i čemu služi?",
+    options: [
+      "Fizikalno tijelo kojim upravljamo kroz kod koristeći move_and_slide()",
+      "Tijelo kojim fizikalni engine upravlja automatski",
+      "Statično tijelo koje nikad ne mijenja položaj",
+      "Trigger zona za detekciju kolizija bez fizike"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Koja je ključna razlika između _process(delta) i _physics_process(delta) u Godotu?",
+    options: [
+      "_physics_process se poziva u fiksnim vremenskim koracima neovisno o framerate-u, a _process ovisi o njemu",
+      "_process je brži i preporučen za fizikalne kalkulacije",
+      "Nema funkcionalne razlike, samo im se konvencija upotrebe razlikuje",
+      "_physics_process koristi delta time, a _process ga ne prima kao argument"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Što radi queue_free() u GDScript-u?",
+    options: [
+      "Označava čvor za brisanje — briše se sigurno na kraju trenutnog kadra",
+      "Odmah i trenutno briše čvor iz memorije",
+      "Pauzira čvor i skriva ga s ekrana",
+      "Oslobađa samo vizualne resurse čvora, ali ga zadržava u stablu"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Koja je primarna svrha Area2D čvora u Godotu?",
+    options: [
+      "Detekcija preklapanja i triggerova bez primjene fizikalnih sila",
+      "Kretanje lika uz automatsku detekciju kolizija",
+      "Iscrtavanje 2D grafike i spriteva",
+      "Reproduciranje prostornog zvuka u sceni"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Što je PackedScene u Godotu?",
+    options: [
+      "Predložak scene pohranjen kao resurs koji se može instancirati više puta",
+      "Komprimirana tekstura optimizirana za brzo učitavanje",
+      "Skript koji je kompajliran i vezan za određeni čvor",
+      "Audio resurs pakiran u binarni format"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Što anotacija @export ispred varijable čini u GDScript-u?",
+    options: [
+      "Čini varijablu vidljivom i editabilnom u Godot Inspectoru",
+      "Exportira varijablu kao dio javnog API-ja prema drugim projektima",
+      "Čini varijablu globalnom dostupnom iz bilo koje skripte",
+      "Označava varijablu kao konstantu (samo za čitanje)"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Čemu služi collision_layer na fizikalnom čvoru u Godotu?",
+    options: [
+      "Definira na kojem sloju se taj objekt fizikalno nalazi",
+      "Određuje s kojim slojevima ovaj objekt detektira kolizije",
+      "Definira brzinu kojom kolizijski oblik reagira",
+      "Postavlja vidljivost kolizijskog oblika u editoru"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Kojom metodom dinamički dodajemo novi čvor kao dijete postojećeg čvora u Godotu?",
+    options: ["add_child()", "append_child()", "spawn()", "create_node()"],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Čemu služi CanvasLayer čvor u Godotu?",
+    options: [
+      "Iscrtavanju UI elemenata neovisno o položaju i zumu kamere",
+      "Upravljanju slojevima tilemapa u sceni",
+      "Organiziranju animacijskih slojeva za 2D likove",
+      "Definiranju fizikalnih slojeva za kolizije"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Koje je glavno načelo signala u Godotu?",
+    options: [
+      "Omogućuju labavu komunikaciju između čvorova — emiter ne mora znati tko sluša",
+      "Signali su brži oblik direktnog pozivanja metoda između skripti",
+      "Služe isključivo za pokretanje animacija u AnimationPlayeru",
+      "Signali instanciraju nove scene kao odgovor na događaje"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Što je TileMapLayer čvor u Godot 4?",
+    options: [
+      "Čvor koji iscrtava karte zasnovane na pločicama (tilesetu) s podrškom za kolizije",
+      "Vrsta ParallaxLayer čvora za pozadinske efekte paralakse",
+      "Sloj koji grupira kolizijske oblike radi bolje organizacije",
+      "Čvor za emitiranje čestica po mreži"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Kako se pristupa Autoload singletonu (npr. GlobalSignals) iz bilo koje skripte u Godotu?",
+    options: [
+      "Direktno po imenu Autoload čvora, bez get_node() poziva",
+      "Isključivo kroz get_tree().root.get_node(\"GlobalSignals\")",
+      "Samo kroz get_parent() ako je singleton roditelj čvora",
+      "Uvijek uz punu putanju /root/GlobalSignals u get_node() pozivu"
+    ],
+    correctIndex: 0
+  },
+  {
+    topic: "Godot osnove",
+    question: "Što vraća get_tree().get_first_node_in_group(\"Player\") ako igrač postoji u sceni?",
+    options: [
+      "Referencu na prvi čvor koji je dodan u grupu \"Player\"",
+      "Array svih čvorova koji su u grupi \"Player\"",
+      "True ako postoji barem jedan čvor u grupi",
+      "Uvijek null — metoda ne vraća čvorove nego samo provjerava grupu"
+    ],
+    correctIndex: 0
+  }
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let activeQuestions = [];
+let currentIndex = 0;
+let score = 0;
+let userAnswers = [];
+let timerInterval = null;
+let elapsedSeconds = 0;
+const QUESTIONS_PER_SESSION = 30;
+
+// ─── TIMER ──────────────────────────────────────────────────────────────────
+function startTimer() {
+  elapsedSeconds = 0;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    elapsedSeconds++;
+    const el = document.getElementById('timer');
+    if (el) el.textContent = formatTime(elapsedSeconds);
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); }
+function formatTime(s) {
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+// ─── SHUFFLE ────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function prepareQuestion(q) {
+  const copy = {
+    topic: q.topic,
+    question: q.question,
+    options: [...q.options],
+    correctIndex: q.correctIndex
+  };
+  const correctAnswer = copy.options[copy.correctIndex];
+  const indices = [0, 1, 2, 3];
+  shuffle(indices);
+  copy.options = indices.map(i => copy.options[i]);
+  copy.correctIndex = copy.options.indexOf(correctAnswer);
+  return copy;
+}
+
+// ─── START ───────────────────────────────────────────────────────────────────
+function startQuiz() {
+  const pool = shuffle([...allQuestions]);
+  activeQuestions = pool.slice(0, QUESTIONS_PER_SESSION).map(prepareQuestion);
+  currentIndex = 0;
+  score = 0;
+  userAnswers = new Array(QUESTIONS_PER_SESSION).fill(null);
+  startTimer();
+  renderQuestion();
+}
+
+// ─── RENDER QUESTION ────────────────────────────────────────────────────────
+function renderQuestion() {
+  const q = activeQuestions[currentIndex];
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="fade-in bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">${q.topic}</span>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-500">Pitanje <span class="font-bold text-gray-800">${currentIndex + 1}</span> od <span class="font-bold text-gray-800">${QUESTIONS_PER_SESSION}</span></span>
+          <span id="timer" class="text-sm font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">${formatTime(elapsedSeconds)}</span>
+        </div>
+      </div>
+
+      <div class="w-full bg-gray-200 rounded-full h-1.5 mb-6">
+        <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width:${((currentIndex) / QUESTIONS_PER_SESSION) * 100}%"></div>
+      </div>
+
+      <p class="text-base font-semibold text-gray-800 mb-6 leading-relaxed">${q.question}</p>
+
+      <div class="space-y-3" id="options">
+        ${q.options.map((opt, i) => `
+          <button
+            onclick="selectOption(${i})"
+            id="opt-${i}"
+            class="w-full text-left text-sm px-4 py-3 rounded-xl border-2 border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-150 ${userAnswers[currentIndex] === i ? 'bg-blue-100 border-blue-500 font-semibold text-blue-800' : ''}"
+          >${opt}</button>
+        `).join('')}
+      </div>
+
+      <div class="mt-6 flex justify-between items-center">
+        ${currentIndex > 0 ? `<button onclick="prevQuestion()" class="text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors">← Natrag</button>` : '<span></span>'}
+        <button
+          id="next-btn"
+          onclick="nextQuestion()"
+          ${userAnswers[currentIndex] === null ? 'disabled' : ''}
+          class="ml-auto px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 ${userAnswers[currentIndex] === null ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'}"
+        >${currentIndex === QUESTIONS_PER_SESSION - 1 ? 'Završi kviz ✓' : 'Sljedeće →'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function selectOption(i) {
+  userAnswers[currentIndex] = i;
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+}
+
+function nextQuestion() {
+  if (userAnswers[currentIndex] === null) return;
+  if (currentIndex < QUESTIONS_PER_SESSION - 1) {
+    currentIndex++;
+    renderQuestion();
+  } else {
+    stopTimer();
+    calcScore();
+    renderResults();
+  }
+}
+
+function calcScore() {
+  score = 0;
+  activeQuestions.forEach((q, i) => {
+    if (userAnswers[i] === q.correctIndex) score++;
+  });
+}
+
+// ─── RESULTS ────────────────────────────────────────────────────────────────
+function renderResults() {
+  const pct = Math.round((score / QUESTIONS_PER_SESSION) * 100);
+  let msg, msgColor;
+  if (pct >= 90)      { msg = "Izvrsno! Pravi Godot stručnjak! 🏆";        msgColor = "text-emerald-700"; }
+  else if (pct >= 75) { msg = "Vrlo dobro! Solidno znanje platforme. 🎯";   msgColor = "text-blue-700"; }
+  else if (pct >= 55) { msg = "Dobro! Ima još prostora za napredak. 📚";     msgColor = "text-yellow-700"; }
+  else                { msg = "Trebalo bi ponoviti gradivo. Probaj opet! 💪"; msgColor = "text-red-700"; }
+
+  document.getElementById('app').innerHTML = `
+    <div class="fade-in bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-center">
+      <div class="text-5xl mb-4">${pct >= 75 ? '🎮' : '📖'}</div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-1">Kviz završen!</h2>
+      <p class="text-sm text-gray-500 mb-6">Godot Roguelike – Provjera znanja</p>
+
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-indigo-50 rounded-xl p-4">
+          <div class="text-3xl font-bold text-indigo-700">${score}/${QUESTIONS_PER_SESSION}</div>
+          <div class="text-xs text-gray-500 mt-1">Točnih odgovora</div>
+        </div>
+        <div class="bg-emerald-50 rounded-xl p-4">
+          <div class="text-3xl font-bold text-emerald-700">${pct}%</div>
+          <div class="text-xs text-gray-500 mt-1">Točnost</div>
+        </div>
+        <div class="bg-amber-50 rounded-xl p-4">
+          <div class="text-3xl font-bold text-amber-700 font-mono">${formatTime(elapsedSeconds)}</div>
+          <div class="text-xs text-gray-500 mt-1">Ukupno vrijeme</div>
+        </div>
+      </div>
+
+      <p class="text-base font-semibold ${msgColor} mb-8">${msg}</p>
+
+      <div class="flex gap-3 justify-center flex-wrap">
+        <button onclick="renderReview()" class="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">📋 Pregled odgovora</button>
+        <button onclick="restartQuiz()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 shadow-md transition-colors">🔄 Novi kviz</button>
+      </div>
+    </div>
+  `;
+}
+
+// ─── REVIEW ─────────────────────────────────────────────────────────────────
+function renderReview() {
+  const rows = activeQuestions.map((q, i) => {
+    const correct = userAnswers[i] === q.correctIndex;
+    return `
+      <div class="mb-4 p-4 rounded-xl border-2 ${correct ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}">
+        <div class="flex items-start gap-2 mb-2">
+          <span class="mt-0.5 text-base">${correct ? '✅' : '❌'}</span>
+          <p class="text-sm font-semibold text-gray-800 leading-snug">${i + 1}. ${q.question}</p>
+        </div>
+        ${!correct ? `
+          <p class="text-xs text-red-700 ml-6 mb-1">Tvoj odgovor: <span class="font-semibold">${q.options[userAnswers[i]] ?? '—'}</span></p>
+        ` : ''}
+        <p class="text-xs ${correct ? 'text-emerald-700' : 'text-emerald-800 font-semibold'} ml-6">Točan odgovor: <span class="font-semibold">${q.options[q.correctIndex]}</span></p>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="fade-in bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Pregled odgovora</h2>
+        <span class="text-sm font-bold text-indigo-600">${score}/${QUESTIONS_PER_SESSION} točnih</span>
+      </div>
+      <div class="max-h-[60vh] overflow-y-auto pr-1">${rows}</div>
+      <div class="mt-6 flex gap-3 justify-center flex-wrap">
+        <button onclick="renderResults()" class="px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">← Rezultati</button>
+        <button onclick="restartQuiz()" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 shadow-md transition-colors">🔄 Novi kviz</button>
+      </div>
+    </div>
+  `;
+}
+
+// ─── RESTART ─────────────────────────────────────────────────────────────────
+function restartQuiz() { renderWelcome(); }
+
+// ─── WELCOME ────────────────────────────────────────────────────────────────
+function renderWelcome() {
+  document.getElementById('app').innerHTML = `
+    <div class="fade-in bg-white rounded-2xl shadow-2xl p-8 text-center">
+      <div class="text-6xl mb-4">🎮</div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Godot Roguelike</h1>
+      <h2 class="text-lg font-semibold text-indigo-600 mb-4">Provjera znanja</h2>
+      <p class="text-sm text-gray-500 mb-2 leading-relaxed max-w-md mx-auto">
+        Kviz ispituje razumijevanje koda roguelike projekta u Godot 4 te opće znanje o Godot platformi.
+      </p>
+      <div class="flex gap-4 justify-center my-6 flex-wrap text-sm text-gray-600">
+        <span class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full font-semibold">📋 30 od 40 pitanja</span>
+        <span class="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full font-semibold">🔀 Nasumičan poredak</span>
+        <span class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full font-semibold">🇭🇷 Hrvatski jezik</span>
+      </div>
+      <div class="text-xs text-gray-400 mb-8">⅔ pitanja iz repozitorija · ⅓ opća Godot znanja</div>
+      <button onclick="startQuiz()" class="px-8 py-3 bg-indigo-600 text-white text-base font-bold rounded-xl hover:bg-indigo-700 shadow-lg transition-all duration-150 hover:scale-105">
+        Započni kviz →
+      </button>
+    </div>
+  `;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderWelcome();
+</script>
+</body>
+</html>
